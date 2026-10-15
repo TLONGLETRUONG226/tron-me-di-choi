@@ -1,17 +1,28 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import base64
 
-st.set_page_config(page_title="Trốn Mẹ Đi Chơi 3D", page_icon="🏃", layout="centered")
+st.set_page_config(page_title="Trốn Mẹ Đi Chơi - 3D Minecraft Street", page_icon="🏃", layout="centered")
 
 st.markdown("""
-    <h2 style='text-align: center; color: #ff4b4b;'>🏃 TRỐN MẸ ĐI CHƠI - 3D STREET RUNNER 🚗</h2>
-    <p style='text-align: center; color: #555;'>Dùng phím <b>A / D</b> hoặc <b>Mũi tên Trái / Phải</b> để né chướng ngại vật. Đừng để xe mẹ tông trúng!</p>
+    <h2 style='text-align: center; color: #ff4b4b; text-shadow: 1px 1px 2px black;'>🏃 TRỐN MẸ ĐI CHƠI - 3D MINECRAFT RUNNER 🚗</h2>
+    <p style='text-align: center; color: #333; font-weight: bold;'>Sử dụng phím <b>A / D</b> hoặc <b>Mũi tên Trái / Phải</b> để né chướng ngại vật!</p>
 """, unsafe_allow_html=True)
 
-# Sử dụng hình ảnh nền đường phố chất lượng cao thay thế trực tiếp, loại bỏ hoàn toàn lỗi "Image not found"
-bg_image_url = "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1200&q=80"
+# Chuyển đổi bức ảnh IMG_0299.jpg của bạn thành mã nguồn nhúng trực tiếp để tuyệt đối không bị lỗi mất ảnh
+def get_base64_of_bin_file(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
 
-# Mã nguồn Game 3D phong cách Street Perspective
+try:
+    bg_base64 = get_base64_of_bin_file('IMG_0299.jpg')
+    bg_image_data = f"data:image/jpeg;base64,{bg_base64}"
+except Exception:
+    # Fallback nếu chưa tải ảnh lên GitHub, nhưng khuyến khích bạn upload đúng file IMG_0299.jpg lên GitHub
+    bg_image_data = "https://i.postimg.cc/mD8zS5Q9/IMG-0299.jpg"
+
+# Mã nguồn Game 3D chân thực trên nền Minecraft
 game_html = f"""
 <!DOCTYPE html>
 <html>
@@ -23,28 +34,29 @@ game_html = f"""
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #0e1117;
+            background-color: #1a1a1a;
             font-family: 'Courier New', Courier, monospace;
         }}
         #gameContainer {{
             position: relative;
-            width: 700px;
-            height: 450px;
-            border: 4px solid #333;
+            width: 750px;
+            height: 480px;
+            border: 4px solid #222;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-            background-image: url('{bg_image_url}');
+            box-shadow: 0 12px 30px rgba(0,0,0,0.7);
+            background-image: url('{bg_image_data}');
             background-size: cover;
             background-position: center;
         }}
-        /* Lớp phủ làm tối nhẹ nền để làm nổi bật đường chạy */
+        /* Lớp phủ tinh chỉnh ánh sáng để hòa hợp cảnh nền và không gian 3D */
         #gameContainer::before {{
             content: "";
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.45);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.4) 100%);
             z-index: 1;
+            pointer-events: none;
         }}
         canvas {{
             position: absolute;
@@ -55,7 +67,7 @@ game_html = f"""
         #uiOverlay {{
             position: absolute;
             top: 15px;
-            left: 15px;
+            left: 20px;
             font-size: 16px;
             font-weight: bold;
             color: #fff;
@@ -86,7 +98,7 @@ game_html = f"""
             border-radius: 6px;
             cursor: pointer;
             margin-top: 15px;
-            box-shadow: 0 4px 10px rgba(255, 75, 75, 0.4);
+            box-shadow: 0 4px 10px rgba(255, 75, 75, 0.5);
             transition: 0.2s;
         }}
         button:hover {{
@@ -99,8 +111,8 @@ game_html = f"""
 
 <div id="gameContainer">
     <div id="uiOverlay">
-        <div>🏁 Về đích: <span id="distanceText">150</span>m</div>
-        <div>⚠️ Khoảng cách mẹ đuổi: <span id="momDistanceText" style="color: #ff4b4b;">30</span>m</div>
+        <div>🏁 Khoảng cách về đích: <span id="distanceText">150</span>m</div>
+        <div>⚠️ Khoảng cách xe mẹ đuổi: <span id="momDistanceText" style="color: #ff4b4b;">30</span>m</div>
     </div>
 
     <div id="gameOverOverlay">
@@ -109,7 +121,7 @@ game_html = f"""
         <button onclick="resetGame()">Chơi Lại 🔄</button>
     </div>
 
-    <canvas id="gameCanvas" width="700" height="450"></canvas>
+    <canvas id="gameCanvas" width="750" height="480"></canvas>
 </div>
 
 <script>
@@ -120,16 +132,17 @@ let distance = 150;
 let momDistance = 25; 
 let gameOver = false;
 let gameWon = false;
-let gameSpeed = 4;
+let gameSpeed = 4.5;
 
-const lanes = [240, 350, 460]; 
+// Thiết lập 3 làn đường 3D có chiều sâu phối cảnh chính xác với con đường trong ảnh
+const lanes = [260, 375, 490]; 
 let playerLaneIndex = 1; 
 
 let player = {{
     x: lanes[playerLaneIndex],
-    y: 380,
-    width: 35,
-    height: 50
+    y: 400,
+    width: 45,
+    height: 60
 }};
 
 let obstacles = [];
@@ -153,18 +166,19 @@ function spawnObstacle() {{
     
     obstacles.push({{
         lane: randomLane,
-        z: 0.1, 
+        z: 0.05, // Xuất hiện từ phía chân trời xa
         type: chosenType
     }});
-}}
+}
 
 let obstacleTimer = 0;
 
 function update() {{
     if (gameOver || gameWon) return;
 
+    // Di chuyển mượt mà giữa các làn đường 3D
     let targetX = lanes[playerLaneIndex];
-    player.x += (targetX - player.x) * 0.2;
+    player.x += (targetX - player.x) * 0.25;
 
     distance -= 0.04;
     if (distance <= 0) {{
@@ -174,17 +188,18 @@ function update() {{
     }}
 
     obstacleTimer++;
-    if (obstacleTimer > 45) {{
+    if (obstacleTimer > 40) {{
         spawnObstacle();
         obstacleTimer = 0;
     }}
 
     for (let i = 0; i < obstacles.length; i++) {{
         let obs = obstacles[i];
-        obs.z += 0.018 * (gameSpeed / 3);
+        obs.z += 0.02 * (gameSpeed / 3.5);
 
-        if (obs.z > 0.75 && obs.z < 0.95 && obs.lane === playerLaneIndex) {{
-            momDistance -= 7;
+        // Kiểm tra va chạm khi chướng ngại vật lao đến gần người chơi
+        if (obs.z > 0.78 && obs.z < 0.95 && obs.lane === playerLaneIndex) {{
+            momDistance -= 7; // Mẹ áp sát thêm
             obstacles.splice(i, 1);
             i--;
             if (momDistance <= 0) {{
@@ -195,7 +210,7 @@ function update() {{
             continue;
         }}
 
-        if (obs.z > 1.2) {{
+        if (obs.z > 1.25) {{
             obstacles.splice(i, 1);
             i--;
         }}
@@ -203,46 +218,56 @@ function update() {{
 
     document.getElementById('distanceText').innerText = Math.ceil(distance);
     document.getElementById('momDistanceText').innerText = Math.ceil(momDistance);
-}}
+}
 
 function draw() {{
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.strokeStyle = "rgba(255, 255, 0, 0.6)";
-    ctx.lineWidth = 3;
+    // Vẽ hiệu ứng vạch kẻ đường 3D trùng khớp với đường phố Minecraft trong ảnh
+    ctx.strokeStyle = "rgba(255, 235, 59, 0.7)";
+    ctx.lineWidth = 4;
     
+    // Tụ điểm phối cảnh ở chính giữa đường (horizon point: x=375, y=220)
+    let horizonX = 375;
+    let horizonY = 220;
+
+    // Viền đường bên trái và phải
     ctx.beginPath();
-    ctx.moveTo(350, 200); ctx.lineTo(100, 450);
-    ctx.moveTo(350, 200); ctx.lineTo(600, 450);
+    ctx.moveTo(horizonX, horizonY); ctx.lineTo(80, 480);
+    ctx.moveTo(horizonX, horizonY); ctx.lineTo(670, 480);
     ctx.stroke();
 
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+    // Vạch đứt đoạn giữa đường tạo cảm giác không gian 3D lao nhanh
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(350, 200); ctx.lineTo(275, 450);
-    ctx.moveTo(350, 200); ctx.lineTo(425, 450);
+    ctx.moveTo(horizonX, horizonY); ctx.lineTo(300, 480);
+    ctx.moveTo(horizonX, horizonY); ctx.lineTo(450, 480);
     ctx.stroke();
 
+    // Sắp xếp vẽ chướng ngại vật từ xa tới gần (để vật ở xa nằm khuất phía sau)
     obstacles.sort((a, b) => a.z - b.z);
 
     obstacles.forEach(obs => {{
-        let screenY = 200 + obs.z * 250;
+        let screenY = horizonY + obs.z * 260;
         let baseLaneX = lanes[obs.lane];
-        let screenX = 350 + (baseLaneX - 350) * obs.z;
-        let size = Math.max(15, obs.z * 55);
+        let screenX = horizonX + (baseLaneX - horizonX) * obs.z;
+        let size = Math.max(18, obs.z * 65);
 
         ctx.font = `${{size}}px Arial`;
         ctx.textAlign = "center";
         ctx.fillText(obs.type, screenX, screenY);
-    }});
+    }));
 
-    ctx.font = "42px Arial";
+    // Vẽ nhân vật chàng trai 🏃 (phóng to dần tạo cảm giác 3D)
+    ctx.font = "48px Arial";
     ctx.textAlign = "center";
     ctx.fillText("🏃", player.x, player.y);
 
-    ctx.font = "38px Arial";
-    let momVisualX = player.x + Math.sin(Date.now() / 150) * 5; 
-    ctx.fillText("🚘", momVisualX, 435);
+    // Vẽ xe của Mẹ 🚘 bám đuổi sát phía sau dưới đáy màn hình
+    ctx.font = "42px Arial";
+    let momVisualX = player.x + Math.sin(Date.now() / 120) * 6; 
+    ctx.fillText("🚘", momVisualX, 465);
 }}
 
 function loop() {{
@@ -260,32 +285,6 @@ function endGame(isWin) {{
     overlay.style.display = 'flex';
 
     if (isWin) {{
-        title.innerText = "🎉 THOÁT THÀNH CÔNG!";
+        title.innerText = "🎉 TRỐN THÀNH CÔNG!";
         title.style.color = "#4CAF50";
-        desc.innerText = "Tuyệt vời! Bạn đã về đích an toàn trước khi bị mẹ tóm gọn!";
-    }} else {{
-        title.innerText = "💥 XE CỦA MẸ ĐÃ BẮT KỊP!";
-        title.style.color = "#FF5252";
-        desc.innerText = "Bùm! Bạn va phải quá nhiều chướng ngại vật nên đã bị mẹ lái xe đuổi kịp!";
-    }}
-}}
-
-function resetGame() {{
-    distance = 150;
-    momDistance = 25;
-    gameOver = false;
-    gameWon = false;
-    obstacles = [];
-    playerLaneIndex = 1;
-    player.x = lanes[playerLaneIndex];
-    document.getElementById('gameOverOverlay').style.display = 'none';
-    requestAnimationFrame(loop);
-}}
-
-requestAnimationFrame(loop);
-</script>
-</body>
-</html>
-"""
-
-components.html(game_html, height=480)
+        desc
