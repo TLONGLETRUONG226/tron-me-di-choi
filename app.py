@@ -177,7 +177,6 @@ function spawnObstacle() {{
         z: 0.1, // Từ xa (0) đến gần (1)
         type: chosenType
     }});
-}
 
 let obstacleTimer = 0;
 
