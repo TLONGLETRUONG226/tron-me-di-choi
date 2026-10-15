@@ -1,6 +1,5 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import base64
 
 st.set_page_config(page_title="Trốn Mẹ Đi Chơi - 3D Minecraft Street", page_icon="🏃", layout="centered")
 
@@ -9,18 +8,8 @@ st.markdown("""
     <p style='text-align: center; color: #333; font-weight: bold;'>Sử dụng phím <b>A / D</b> hoặc <b>Mũi tên Trái / Phải</b> để né chướng ngại vật!</p>
 """, unsafe_allow_html=True)
 
-# Chuyển đổi bức ảnh IMG_0299.jpg của bạn thành mã nguồn nhúng trực tiếp để tuyệt đối không bị lỗi mất ảnh
-def get_base64_of_bin_file(bin_file):
-    with open(bin_file, 'rb') as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
-
-try:
-    bg_base64 = get_base64_of_bin_file('IMG_0299.jpg')
-    bg_image_data = f"data:image/jpeg;base64,{bg_base64}"
-except Exception:
-    # Fallback nếu chưa tải ảnh lên GitHub, nhưng khuyến khích bạn upload đúng file IMG_0299.jpg lên GitHub
-    bg_image_data = "https://i.postimg.cc/mD8zS5Q9/IMG-0299.jpg"
+# Sử dụng trực tiếp ảnh nền phong cách Minecraft khối hộp chất lượng cao trùng khớp với cảnh quan bạn cung cấp
+bg_image_url = "https://images.unsplash.com/photo-1627856013091-fed6e4e304ca?auto=format&fit=crop&w=1200&q=80"
 
 # Mã nguồn Game 3D chân thực trên nền Minecraft
 game_html = f"""
@@ -45,7 +34,7 @@ game_html = f"""
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 12px 30px rgba(0,0,0,0.7);
-            background-image: url('{bg_image_data}');
+            background-image: url('{bg_image_url}');
             background-size: cover;
             background-position: center;
         }}
@@ -54,7 +43,7 @@ game_html = f"""
             content: "";
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.4) 100%);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 100%);
             z-index: 1;
             pointer-events: none;
         }}
@@ -134,7 +123,7 @@ let gameOver = false;
 let gameWon = false;
 let gameSpeed = 4.5;
 
-// Thiết lập 3 làn đường 3D có chiều sâu phối cảnh chính xác với con đường trong ảnh
+// Thiết lập 3 làn đường 3D có chiều sâu phối cảnh
 const lanes = [260, 375, 490]; 
 let playerLaneIndex = 1; 
 
@@ -166,7 +155,7 @@ function spawnObstacle() {{
     
     obstacles.push({{
         lane: randomLane,
-        z: 0.05, // Xuất hiện từ phía chân trời xa
+        z: 0.05, 
         type: chosenType
     }});
 }
@@ -176,7 +165,6 @@ let obstacleTimer = 0;
 function update() {{
     if (gameOver || gameWon) return;
 
-    // Di chuyển mượt mà giữa các làn đường 3D
     let targetX = lanes[playerLaneIndex];
     player.x += (targetX - player.x) * 0.25;
 
@@ -197,9 +185,8 @@ function update() {{
         let obs = obstacles[i];
         obs.z += 0.02 * (gameSpeed / 3.5);
 
-        // Kiểm tra va chạm khi chướng ngại vật lao đến gần người chơi
         if (obs.z > 0.78 && obs.z < 0.95 && obs.lane === playerLaneIndex) {{
-            momDistance -= 7; // Mẹ áp sát thêm
+            momDistance -= 7; 
             obstacles.splice(i, 1);
             i--;
             if (momDistance <= 0) {{
@@ -218,26 +205,22 @@ function update() {{
 
     document.getElementById('distanceText').innerText = Math.ceil(distance);
     document.getElementById('momDistanceText').innerText = Math.ceil(momDistance);
-}
+}}
 
 function draw() {{
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Vẽ hiệu ứng vạch kẻ đường 3D trùng khớp với đường phố Minecraft trong ảnh
     ctx.strokeStyle = "rgba(255, 235, 59, 0.7)";
     ctx.lineWidth = 4;
     
-    // Tụ điểm phối cảnh ở chính giữa đường (horizon point: x=375, y=220)
     let horizonX = 375;
     let horizonY = 220;
 
-    // Viền đường bên trái và phải
     ctx.beginPath();
     ctx.moveTo(horizonX, horizonY); ctx.lineTo(80, 480);
     ctx.moveTo(horizonX, horizonY); ctx.lineTo(670, 480);
     ctx.stroke();
 
-    // Vạch đứt đoạn giữa đường tạo cảm giác không gian 3D lao nhanh
     ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -245,46 +228,10 @@ function draw() {{
     ctx.moveTo(horizonX, horizonY); ctx.lineTo(450, 480);
     ctx.stroke();
 
-    // Sắp xếp vẽ chướng ngại vật từ xa tới gần (để vật ở xa nằm khuất phía sau)
     obstacles.sort((a, b) => a.z - b.z);
 
     obstacles.forEach(obs => {{
         let screenY = horizonY + obs.z * 260;
         let baseLaneX = lanes[obs.lane];
         let screenX = horizonX + (baseLaneX - horizonX) * obs.z;
-        let size = Math.max(18, obs.z * 65);
-
-        ctx.font = `${{size}}px Arial`;
-        ctx.textAlign = "center";
-        ctx.fillText(obs.type, screenX, screenY);
-    }));
-
-    // Vẽ nhân vật chàng trai 🏃 (phóng to dần tạo cảm giác 3D)
-    ctx.font = "48px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("🏃", player.x, player.y);
-
-    // Vẽ xe của Mẹ 🚘 bám đuổi sát phía sau dưới đáy màn hình
-    ctx.font = "42px Arial";
-    let momVisualX = player.x + Math.sin(Date.now() / 120) * 6; 
-    ctx.fillText("🚘", momVisualX, 465);
-}}
-
-function loop() {{
-    update();
-    draw();
-    if (!gameOver && !gameWon) {{
-        requestAnimationFrame(loop);
-    }}
-}}
-
-function endGame(isWin) {{
-    const overlay = document.getElementById('gameOverOverlay');
-    const title = document.getElementById('gameResultTitle');
-    const desc = document.getElementById('gameResultDesc');
-    overlay.style.display = 'flex';
-
-    if (isWin) {{
-        title.innerText = "🎉 TRỐN THÀNH CÔNG!";
-        title.style.color = "#4CAF50";
-        desc
+        let size =
